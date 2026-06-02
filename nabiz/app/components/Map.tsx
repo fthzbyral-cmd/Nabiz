@@ -1,0 +1,492 @@
+'use client'
+
+import { useEffect, useRef, useState, useCallback } from 'react'
+import * as d3 from 'd3'
+
+const EMOTIONS = ['öfkeli', 'karmaşık', 'umutlu', 'yorgun', 'sakin', 'bekleyen']
+const COLORS: Record<string, string> = {
+  'öfkeli': '#ff3b5c', 'karmaşık': '#c77dff', 'umutlu': '#57cc99',
+  'yorgun': '#adb5bd', 'sakin': '#4cc9f0', 'bekleyen': '#f4a261'
+}
+const EICO: Record<string, string> = {
+  'öfkeli': '😤', 'karmaşık': '😵', 'umutlu': '🙏',
+  'yorgun': '😮‍💨', 'sakin': '😌', 'bekleyen': '🤔'
+}
+const BIG_CITIES: Record<string, { label: string, val: string }> = {
+  'istanbul': { label: 'İstanbul', val: '12.4K' },
+  'ankara': { label: 'Ankara', val: '6.1K' },
+  'izmir': { label: 'İzmir', val: '5.3K' },
+  'antalya': { label: 'Antalya', val: '2.8K' },
+  'adana': { label: 'Adana', val: '3.7K' },
+  'trabzon': { label: 'Trabzon', val: '1.2K' },
+  'diyarbakir': { label: 'Diyarbakır', val: '1.6K' },
+}
+
+function nn(s: string) {
+  return (s || '').toLowerCase()
+    .replace(/i̇/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+    .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/ı/g, 'i').trim()
+}
+
+// ── KATMAN 1: Statik harita — sadece bir kere çizilir ──
+function useStaticMap(mapRef: React.RefObject<HTMLDivElement | null>, onProvinceClick: (name: string) => void) {
+  const drawn = useRef(false)
+  const pathsRef = useRef<Record<string, SVGPathElement>>({})
+  const orbsRef = useRef<Record<string, SVGCircleElement>>({})
+
+  useEffect(() => {
+    if (drawn.current || !mapRef.current) return
+    drawn.current = true
+
+    async function draw() {
+      const geo = await d3.json('https://cdn.jsdelivr.net/gh/alpers/Turkey-Maps-GeoJSON@master/tr-cities.json') as any
+      const wrap = mapRef.current!
+      wrap.innerHTML = ''
+      const W = wrap.clientWidth || 360
+      const H = Math.round(W * 0.54)
+
+      const svg = d3.select(wrap).append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('width', W).attr('height', H)
+        .style('animation', 'mapBreathe 3s ease-in-out infinite')
+
+      const defs = svg.append('defs')
+
+      // Arkaplan
+      const bg = defs.append('radialGradient').attr('id', 'bgG').attr('cx', '40%').attr('cy', '50%').attr('r', '70%')
+      bg.append('stop').attr('offset', '0%').attr('stop-color', '#0d2218')
+      bg.append('stop').attr('offset', '60%').attr('stop-color', '#071410')
+      bg.append('stop').attr('offset', '100%').attr('stop-color', '#030810')
+      svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'url(#bgG)')
+
+      // Border glow
+      defs.append('filter').attr('id', 'bGlow').attr('x', '-20%').attr('y', '-20%').attr('width', '140%').attr('height', '140%')
+        .html('<feGaussianBlur stdDeviation="0.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+
+      // Orb glow — küçük iller
+      defs.append('filter').attr('id', 'oGlow').attr('x', '-100%').attr('y', '-100%').attr('width', '300%').attr('height', '300%')
+        .html('<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+
+      // Orb glow — büyük şehirler
+      defs.append('filter').attr('id', 'bigGlow').attr('x', '-150%').attr('y', '-150%').attr('width', '400%').attr('height', '400%')
+        .html('<feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+
+      // Global gradient defs — renk güncellemesi için
+      EMOTIONS.forEach(em => {
+        const rg = defs.append('radialGradient').attr('id', `grad_${em}`).attr('cx', '35%').attr('cy', '30%').attr('r', '65%')
+        rg.append('stop').attr('offset', '0%').attr('stop-color', '#fff').attr('stop-opacity', '.9')
+        rg.append('stop').attr('offset', '40%').attr('stop-color', COLORS[em]).attr('stop-opacity', '1')
+        rg.append('stop').attr('offset', '100%').attr('stop-color', COLORS[em]).attr('stop-opacity', '.4')
+      })
+
+      const proj = d3.geoMercator().fitSize([W, H], geo)
+      const path = d3.geoPath().projection(proj)
+
+      // İl sınırları
+      svg.selectAll('.province')
+        .data(geo.features).enter().append('path')
+        .attr('class', 'province')
+        .attr('d', path as any)
+        .attr('fill', '#000')
+        .attr('stroke', '#00cfff')
+        .attr('stroke-opacity', '0.85')
+        .attr('stroke-width', '0.5')
+        .attr('stroke-opacity', '0.5')
+        .attr('filter', 'url(#bGlow)')
+        .attr('data-name', (d: any) => d.properties?.name || d.properties?.NAME || d.properties?.il_adi || '')
+        .on('click', function(_e: any, d: any) {
+          const n = (d as any).properties?.name || (d as any).properties?.NAME || (d as any).properties?.il_adi || ''
+          onProvinceClick(n)
+        })
+        .each(function(d: any) {
+          const n = (d as any).properties?.name || (d as any).properties?.NAME || (d as any).properties?.il_adi || ''
+          pathsRef.current[nn(n)] = this as SVGPathElement
+        })
+
+      // Orblar — sadece bir kere oluşturulur, renk sonra CSS ile güncellenir
+      geo.features.forEach((d: any) => {
+        const p = d.properties || {}
+        const n = p.name || p.NAME || p.il_adi || ''
+        const k = nn(n)
+        const isBig = !!BIG_CITIES[k]
+
+        let c: [number, number]
+        try { c = path.centroid(d as any) as [number, number] } catch { return }
+        if (!c || isNaN(c[0]) || isNaN(c[1])) return
+
+        const area = path.area(d as any)
+        const r = isBig
+          ? Math.max(6, Math.min(12, Math.sqrt(area) * 0.09))
+          : Math.max(2, Math.min(4.5, Math.sqrt(area) * 0.038))
+
+        // Ripple — sadece büyük şehirlerde, sınırlı sayıda
+        if (isBig) {
+          const rip = svg.append('circle')
+            .attr('cx', c[0]).attr('cy', c[1]).attr('r', r)
+            .attr('fill', 'none').attr('stroke', '#ff3b5c')
+            .attr('stroke-width', '0.8').attr('opacity', '0')
+            .attr('data-rip', k)
+            .style('pointer-events', 'none')
+
+          let ripRunning = true
+          const delay = Math.random() * 1500
+
+          function animRip() {
+            if (!ripRunning) return
+            rip.attr('r', r).attr('opacity', '.5')
+            rip.transition().delay(delay).duration(2500).ease(d3.easeCubicOut)
+              .attr('r', r * 4).attr('opacity', '0')
+              .on('end', () => { if (ripRunning) setTimeout(animRip, 500) })
+          }
+          animRip()
+        }
+
+        // Orb — tüm iller, renk sonradan güncellenir
+        const orb = svg.append('circle')
+          .attr('cx', c[0]).attr('cy', c[1]).attr('r', r)
+          .attr('fill', 'url(#grad_bekleyen)')
+          .attr('filter', isBig ? 'url(#bigGlow)' : 'url(#oGlow)')
+          .attr('data-orb', k)
+          .style('pointer-events', 'none')
+
+        orbsRef.current[k] = orb.node() as SVGCircleElement
+
+        // Pulse — sadece büyük şehirlerde
+        if (isBig) {
+          let pulseRunning = true
+          function animPulse() {
+            if (!pulseRunning) return
+            orb.transition().duration(1000).ease(d3.easeSinInOut).attr('r', r * 1.25)
+              .transition().duration(1000).ease(d3.easeSinInOut).attr('r', r)
+              .on('end', () => { if (pulseRunning) animPulse() })
+          }
+          animPulse()
+        }
+
+        // Şehir etiketi — sadece büyük şehirler
+        if (isBig) {
+          const info = BIG_CITIES[k]
+          svg.append('text').attr('x', c[0]).attr('y', c[1] - r - 6)
+            .attr('text-anchor', 'middle').attr('font-size', '7.5').attr('font-weight', '700')
+            .attr('fill', '#fff').attr('opacity', '.9').style('pointer-events', 'none').text(info.label)
+          svg.append('text').attr('x', c[0]).attr('y', c[1] - r + 3)
+            .attr('text-anchor', 'middle').attr('font-size', '6.5')
+            .attr('fill', '#aaa').attr('opacity', '.8').style('pointer-events', 'none').text(info.val)
+        }
+      })
+    }
+
+    draw()
+  }, [])
+
+  return { pathsRef, orbsRef }
+}
+
+// ── KATMAN 2: Renk güncellemesi — haritayı yeniden çizmez ──
+function useColorUpdate(orbsRef: React.RefObject<Record<string, SVGCircleElement>>, byProvince: Record<string, any>) {
+  useEffect(() => {
+    if (!orbsRef.current) return
+    Object.entries(orbsRef.current).forEach(([k, el]) => {
+      if (!el) return
+      const provName = Object.keys(byProvince).find(n => nn(n) === k)
+      if (!provName) return
+      const byProv = byProvince[provName] || {}
+      const topEm = Object.keys(byProv).length > 0
+        ? Object.keys(byProv).reduce((a, b) => byProv[a] > byProv[b] ? a : b)
+        : null
+      if (topEm) el.setAttribute('fill', `url(#grad_${topEm})`)
+    })
+  }, [byProvince])
+}
+
+export default function Map({ results, event, onVoted }: any) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const [showShare, setShowShare] = useState(false)
+  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
+  const [voted, setVoted] = useState(false)
+  const [secs, setSecs] = useState(0)
+  const [filterIl, setFilterIl] = useState('Tümü')
+  const [showFilter, setShowFilter] = useState(false)
+
+  const handleProvinceClick = useCallback((name: string) => {
+    setSelectedProvince(name)
+    setShowShare(true)
+  }, [])
+
+  const { orbsRef } = useStaticMap(mapRef, handleProvinceClick)
+  useColorUpdate(orbsRef, results?.byProvince || {})
+
+  useEffect(() => {
+    const t = setInterval(() => setSecs(s => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  async function submitVote() {
+    if (!selectedEmotion || !event) return
+    const res = await fetch('/api/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ province: selectedProvince || 'Bilinmiyor', emotion: selectedEmotion, eventId: event.id })
+    })
+    const data = await res.json()
+    if (data.success) {
+      setVoted(true)
+      setShowShare(false)
+      setSelectedEmotion(null)
+      onVoted()
+      setTimeout(() => setVoted(false), 3000)
+    }
+  }
+
+  const total = results?.total || 0
+  const byEmotion = results?.byEmotion || {}
+  const topEmotion = EMOTIONS.reduce((a, b) => (byEmotion[a] || 0) > (byEmotion[b] || 0) ? a : b, 'öfkeli')
+  const liveTime = secs < 60 ? `${secs}sn önce` : secs < 3600 ? `${Math.floor(secs / 60)}dk önce` : `${Math.floor(secs / 3600)}sa önce`
+  const EKG = "M0,8 L6,8 L8,2 L10,14 L12,4 L14,10 L16,8 L40,8"
+
+  return (
+    <div style={{ background: '#07090f', minHeight: '100vh', color: '#fff', fontFamily: 'sans-serif', maxWidth: 480, margin: '0 auto' }}>
+
+      {/* HEADER */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 14px 11px', borderBottom: '.5px solid #1a2030' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1.5 }}>nabi</span>
+          <span style={{ position: 'relative', display: 'inline-block', fontSize: 24, fontWeight: 900, letterSpacing: -1.5 }}>
+            z
+           z
+         <span style={{ position: 'absolute', top: 0, right: -8, width: 6, height: 6,  borderRadius: '50%', background: '#ff3b5c', animation: 'blink 1.2s infinite', display: 'block' }} />
+          </span>
+          <svg width="34" height="14" viewBox="0 0 40 16" fill="none" style={{ marginLeft: 8 }}>
+            <polyline points={EKG} stroke="#ff3b5c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div style={{ fontSize: 11, color: '#667' }}>Türkiye şu an ne hissediyor?</div>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#1a0810', border: '.5px solid #ff3b5c55', borderRadius: 20, padding: '3px 8px', fontSize: 10, color: '#ff3b5c', fontWeight: 700 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff3b5c', animation: 'blink 1.2s infinite' }} />CANLI
+          </div>
+          <div style={{ fontSize: 11, color: '#778' }}>👥 {total.toLocaleString('tr-TR')}</div>
+        </div>
+      </div>
+
+      {/* ALERT */}
+      <div style={{ margin: '10px 14px', background: '#110a10', border: '.5px solid #ff3b5c44', borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 32, height: 32, background: '#ff3b5c22', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="18" height="10" viewBox="0 0 40 16" fill="none">
+            <polyline points={EKG} stroke="#ff3b5c" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div>
+          <div style={{ fontSize: 13, color: '#ff3b5c', fontWeight: 600 }}>{event?.title || 'Türkiye gündemi hareketli'}</div>
+          <div style={{ fontSize: 11, color: '#556', marginTop: 2 }}>{event?.description || 'Toplumun nabzı anlık olarak ölçülüyor.'}</div>
+        </div>
+        <div style={{ marginLeft: 'auto', fontSize: 10, color: '#445', whiteSpace: 'nowrap' }}>🕐 {liveTime}</div>
+      </div>
+
+      {/* MAP */}
+      <div style={{ padding: '0 14px 6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: '#ccd', fontWeight: 500 }}>İl bazında anlık duygu haritası</div>
+          <div style={{ display: 'flex', gap: 6, position: 'relative' }}>
+            <div onClick={() => setShowFilter(!showFilter)}
+              style={{ background: '#111827', border: '.5px solid #243', borderRadius: 8, padding: '5px 10px', fontSize: 11, color: '#889', cursor: 'pointer' }}>
+              {filterIl} ▾
+            </div>
+            {showFilter && (
+              <div style={{ position: 'absolute', top: 30, right: 30, background: '#111827', border: '.5px solid #243', borderRadius: 8, zIndex: 50, minWidth: 120 }}>
+                {['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Adana', 'Trabzon', 'Diyarbakır'].map(il => (
+                  <div key={il} onClick={() => { setFilterIl(il); setShowFilter(false) }}
+                    style={{ padding: '8px 12px', fontSize: 12, color: filterIl === il ? '#ff3b5c' : '#aaa', cursor: 'pointer' }}>{il}</div>
+                ))}
+              </div>
+            )}
+            <div style={{ background: '#111827', border: '.5px solid #243', borderRadius: 8, padding: '5px 8px', fontSize: 11, color: '#889', cursor: 'pointer' }}>⛶</div>
+          </div>
+        </div>
+        <div ref={mapRef} style={{ background: '#060d18', borderRadius: 12, overflow: 'hidden', minHeight: 180 }} />
+      </div>
+
+      {/* LEGEND */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 11px', padding: '6px 16px 6px' }}>
+        {EMOTIONS.map(e => (
+          <div key={e} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#888' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[e], boxShadow: `0 0 4px ${COLORS[e]}` }} />
+            {e}
+          </div>
+        ))}
+      </div>
+
+      {/* EMOTION BAR */}
+      <div style={{ display: 'flex', margin: '6px 14px 10px', background: '#0e1520', borderRadius: 12, overflow: 'hidden', border: '.5px solid #1a2535' }}>
+        {EMOTIONS.map(e => {
+          const pct = total > 0 ? Math.round((byEmotion[e] || 0) / total * 100) : 0
+          return (
+            <div key={e} style={{ flex: 1, padding: '7px 2px', textAlign: 'center', borderRight: '.5px solid #1a2535' }}>
+              <div style={{ width: 22, height: 22, background: COLORS[e] + '22', border: `.5px solid ${COLORS[e]}44`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2px', fontSize: 12 }}>{EICO[e]}</div>
+              <div style={{ fontSize: 7.5, color: '#667' }}>{e}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: COLORS[e] }}>%{pct}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* STATS 5 KART */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, padding: '0 14px 12px' }}>
+        <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
+          <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>Katılım</div>
+          <svg width="100%" height="12" viewBox="0 0 40 12">
+            <polyline points="0,6 6,6 8,1 10,11 12,3 14,9 16,6 40,6" stroke="#57cc99" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          </svg>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginTop: 2 }}>{total > 999 ? (total / 1000).toFixed(1) + 'K' : total || '0'}</div>
+          <div style={{ fontSize: 7, color: '#57cc99', marginTop: 1 }}>↑ son 10dk</div>
+        </div>
+        <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
+          <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>Baskın</div>
+          <div style={{ fontSize: 16, margin: '1px 0' }}>{EICO[topEmotion]}</div>
+          <div style={{ fontSize: 8, fontWeight: 700, color: COLORS[topEmotion] }}>{topEmotion.slice(0, 6).toUpperCase()}</div>
+          <div style={{ fontSize: 7, color: COLORS[topEmotion] }}>%{total > 0 ? Math.round((byEmotion[topEmotion] || 0) / total * 100) : 0}</div>
+        </div>
+        <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
+          <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>En Aktif</div>
+          <svg width="100%" height="12" viewBox="0 0 40 12">
+            <rect x="2" y="7" width="5" height="5" rx="1" fill="#ff3b5c" />
+            <rect x="9" y="4" width="5" height="8" rx="1" fill="#ff3b5c" />
+            <rect x="16" y="1" width="5" height="11" rx="1" fill="#ff3b5c" />
+            <rect x="23" y="5" width="5" height="7" rx="1" fill="#ff3b5c" opacity=".5" />
+            <rect x="30" y="7" width="5" height="5" rx="1" fill="#ff3b5c" opacity=".3" />
+          </svg>
+          <div style={{ fontSize: 8, fontWeight: 700, color: '#fff' }}>İSTANBUL</div>
+          <div style={{ fontSize: 7, color: '#445' }}>12.4K kişi</div>
+        </div>
+        <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
+          <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>İl Sayısı</div>
+          <div style={{ position: 'relative', width: 30, height: 30, margin: '2px auto' }}>
+            <svg width="30" height="30" viewBox="0 0 30 30">
+              <circle cx="15" cy="15" r="12" fill="none" stroke="#1a2535" strokeWidth="2.5" />
+              <circle cx="15" cy="15" r="12" fill="none" stroke="#00d4ff" strokeWidth="2.5" strokeDasharray="75.4" strokeDashoffset="0" strokeLinecap="round" transform="rotate(-90 15 15)" />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>81</div>
+          </div>
+          <div style={{ fontSize: 7, color: '#445' }}>/81</div>
+        </div>
+        <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
+          <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>Toplam Oy</div>
+          <svg width="100%" height="12" viewBox="0 0 40 12">
+            <polyline points="0,7 5,7 7,1 9,11 11,3 13,9 15,6 40,6" stroke="#ff3b5c" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          </svg>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#fff', marginTop: 2 }}>{(total * 3).toLocaleString('tr-TR')}</div>
+          <div style={{ fontSize: 7, color: '#445' }}>bugün</div>
+        </div>
+      </div>
+
+      {/* CANLI AKIŞ */}
+      <div style={{ padding: '0 14px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#ccd' }}>
+            <span style={{ color: '#ff3b5c', animation: 'blink 1s infinite' }}>●</span>
+            CANLI AKIŞ
+            <span style={{ fontSize: 9, color: '#445', fontWeight: 400 }}>illerden son duygular</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#445', cursor: 'pointer' }}>Tümünü Gör ›</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+          {[
+            { c: 'İzmir', e: 'umutlu', t: 'Az önce' },
+            { c: 'Ankara', e: 'karmaşık', t: '30 sn' },
+            { c: 'Adana', e: 'öfkeli', t: '1 dk' },
+            { c: 'Bursa', e: 'yorgun', t: '1 dk' },
+            { c: 'Trabzon', e: 'sakin', t: '2 dk' },
+          ].map((f, i) => (
+            <div key={i} style={{ background: '#0e1520', border: '.5px solid #1a2535', borderRadius: 12, padding: '10px 12px', minWidth: 95, flexShrink: 0, position: 'relative' }}>
+              <div style={{ fontSize: 9, color: '#445', marginBottom: 4 }}>
+                <span style={{ color: COLORS[f.e], fontSize: 7 }}>● </span>{f.t} önce
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>{f.c}</div>
+              <div style={{ fontSize: 11, color: COLORS[f.e], display: 'flex', alignItems: 'center', gap: 3 }}>
+                {EICO[f.e]} {f.e}
+              </div>
+              <div style={{ position: 'absolute', right: 8, top: 8, fontSize: 13, opacity: .4 }}>🤍</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding: '0 14px 12px' }}>
+        <button onClick={() => setShowShare(true)}
+          style={{ width: '100%', background: 'linear-gradient(135deg,#b0001a,#ff1a3c,#ff3b5c)', border: 'none', borderRadius: 18, padding: '16px 20px', fontSize: 16, fontWeight: 800, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, textTransform: 'uppercase', letterSpacing: .5, boxShadow: '0 0 35px #ff3b5c55, 0 0 70px #ff3b5c18', outline: '1.5px solid #ff3b5c66' }}>
+          <svg width="26" height="14" viewBox="0 0 40 16" fill="none">
+            <polyline points={EKG} stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray="80" strokeDashoffset="80">
+              <animate attributeName="stroke-dashoffset" from="80" to="0" dur="1.8s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="1;1;0;1" keyTimes="0;0.8;0.9;1" dur="1.8s" repeatCount="indefinite" />
+            </polyline>
+          </svg>
+          <div>
+            <div>DUYGU PAYLAŞ</div>
+            <div style={{ fontSize: 10, opacity: .75, fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>Sen de ülkenin nabzına katıl</div>
+          </div>
+        </button>
+      </div>
+
+      {/* BOTTOM NAV */}
+      <div style={{ display: 'flex', borderTop: '.5px solid #151e2a', padding: '10px 0 16px', background: '#07090f', position: 'sticky', bottom: 0, zIndex: 10 }}>
+        {[
+          { icon: '🏠', label: 'Harita', active: true },
+          { icon: '📈', label: 'Akış', active: false },
+          { icon: '+', label: '', plus: true },
+          { icon: '📊', label: 'İstatistik', active: false },
+          { icon: '👤', label: 'Profil', active: false },
+        ].map((item, i) => (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 9, color: item.active ? '#ff3b5c' : '#445', cursor: 'pointer' }}>
+            {item.plus ? (
+              <div style={{ width: 42, height: 42, background: '#ff3b5c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -18, boxShadow: '0 0 18px #ff3b5c77', fontSize: 20, color: '#fff' }}>+</div>
+            ) : (
+              <>
+                <div style={{ fontSize: 18 }}>{item.icon}</div>
+                <div>{item.label}</div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* PAYLAŞ MODAL */}
+      {showShare && (
+        <div onClick={() => setShowShare(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.85)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 200 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#0e1520', borderRadius: '22px 22px 0 0', padding: '22px 18px 32px', width: '100%', maxWidth: 480, borderTop: '.5px solid #00d4ff44' }}>
+            <div style={{ width: 36, height: 4, background: '#1e2a3a', borderRadius: 2, margin: '0 auto 18px' }} />
+            <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>Şu an nasıl hissediyorsun?</div>
+            <div style={{ fontSize: 12, color: '#556', textAlign: 'center', marginBottom: 4 }}>{event?.title || 'Güncel olay hakkında'}</div>
+            {selectedProvince && <div style={{ fontSize: 11, color: '#00d4ff', textAlign: 'center', marginBottom: 14 }}>📍 {selectedProvince}</div>}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 18 }}>
+              {EMOTIONS.map(e => (
+                <button key={e} onClick={() => setSelectedEmotion(e)}
+                  style={{ background: '#111827', border: `1.5px solid ${selectedEmotion === e ? COLORS[e] : '#1e2a3a'}`, borderRadius: 14, padding: '12px 8px', cursor: 'pointer', textAlign: 'center', color: '#fff', boxShadow: selectedEmotion === e ? `0 0 12px ${COLORS[e]}44` : 'none' }}>
+                  <div style={{ fontSize: 22 }}>{EICO[e]}</div>
+                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 3 }}>{e}</div>
+                </button>
+              ))}
+            </div>
+            <button onClick={submitVote} disabled={!selectedEmotion}
+              style={{ width: '100%', background: '#ff3b5c', border: 'none', borderRadius: 14, padding: 14, fontSize: 15, fontWeight: 700, color: '#fff', cursor: selectedEmotion ? 'pointer' : 'not-allowed', opacity: selectedEmotion ? 1 : 0.4 }}>
+              Paylaş
+            </button>
+          </div>
+        </div>
+      )}
+
+      {voted && (
+        <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#57cc99', color: '#000', padding: '10px 20px', borderRadius: 20, fontWeight: 600, zIndex: 300, whiteSpace: 'nowrap' }}>
+          ✅ Duygun kaydedildi!
+        </div>
+      )}
+
+      <style>{`
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+        @keyframes mapBreathe { 0%,100%{opacity:1} 50%{opacity:0.5} }
+      `}</style>
+    </div>
+  )
+}
