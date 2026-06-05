@@ -436,7 +436,7 @@ export default function Map({ results, event, onVoted }: any) {
           { icon: '📊', label: 'İstatistik', active: false },
           { icon: '👤', label: 'Profil', active: false },
         ].map((item, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 9, color: item.active ? '#ff3b5c' : '#445', cursor: 'pointer' }}>
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 9, color: item.active ? '#ff3b5c' : '#445', cursor: 'pointer' }} onClick={() => item.plus && setShowShare(true)}>
             {item.plus ? (
               <div style={{ width: 42, height: 42, background: '#ff3b5c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -18, boxShadow: '0 0 18px #ff3b5c77', fontSize: 20, color: '#fff' }}>+</div>
             ) : (
