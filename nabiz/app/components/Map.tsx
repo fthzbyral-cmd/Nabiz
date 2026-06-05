@@ -415,7 +415,7 @@ export default function Map({ results, event, onVoted }: any) {
       {/* CTA */}
       <div style={{ padding: '0 14px 12px' }}>
         <button onClick={() => setShowShare(true)}
-          style={{ width: '100%', background: '#3a0010', border: 'none', borderRadius: 50, padding: '8px 20px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, textTransform: 'uppercase', letterSpacing: .5, boxShadow: '0 0 10px #ff0044, 0 0 25px #ff004499, 0 0 50px #ff004444', outline: '1.5px solid #ff0044' }}>
+          style={{ width: '100%', background: '#3a0010', border: 'none', borderRadius: 50, padding: '5px 20px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, textTransform: 'uppercase', letterSpacing: .5, boxShadow: '0 0 10px #ff0044, 0 0 25px #ff004499, 0 0 50px #ff004444', outline: '1.5px solid #ff0044' }}>
           <svg width="26" height="14" viewBox="0 0 40 16" fill="none">
             <polyline points={EKG} stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="80" strokeDashoffset="80">
