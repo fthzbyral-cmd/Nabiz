@@ -424,7 +424,10 @@ export default function Map({ results, event, onVoted }: any) {
             </polyline>
           </svg>
           <div>
-            <div>DUYGU PAYLAŞ</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="22" height="12" viewBox="0 0 40 16" fill="none"><polyline points="0,8 8,8 12,2 16,14 20,2 24,14 28,8 40,8" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>DUYGU PAYLAŞ</span>
+                  </div>
             <div style={{ fontSize: 10, opacity: .75, fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>Sen de ülkenin nabzına katıl</div>
           </div>
         </button>
