@@ -356,8 +356,8 @@ export default function Map({ results, event, onVoted }: any) {
             <rect x="23" y="5" width="5" height="7" rx="1" fill="#ff3b5c" opacity=".5" />
             <rect x="30" y="7" width="5" height="5" rx="1" fill="#ff3b5c" opacity=".3" />
           </svg>
-          <div style={{ fontSize: 8, fontWeight: 700, color: '#fff' }}>İSTANBUL</div>
-          <div style={{ fontSize: 7, color: '#445' }}>{results?.byProvince?.['istanbul'] || 0} kişi</div>
+          <div style={{ fontSize: 8, fontWeight: 700, color: '#fff' }}>{ (Object.entries(results?.byProvince || {}).sort((a,b)=>Object.values(b[1] as any).reduce((s:any,v:any)=>s+v,0)-Object.values(a[1] as any).reduce((s:any,v:any)=>s+v,0))[0]?.[0] || 'YOK').toUpperCase()}</div>
+          <div style={{ fontSize: 7, color: '#445' }}>{ Object.entries(results?.byProvince || {}).sort((a,b)=>Object.values(b[1] as any).reduce((s:any,v:any)=>s+v,0)-Object.values(a[1] as any).reduce((s:any,v:any)=>s+v,0))[0]?.[1] ? Object.values(Object.entries(results?.byProvince || {}).sort((a,b)=>Object.values(b[1] as any).reduce((s:any,v:any)=>s+v,0)-Object.values(a[1] as any).reduce((s:any,v:any)=>s+v,0))[0]?.[1] as any).reduce((s:any,v:any)=>s+v,0) : 0} kişi</div>
         </div>
         <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
           <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>İl Sayısı</div>
