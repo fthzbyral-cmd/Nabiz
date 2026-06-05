@@ -415,7 +415,7 @@ export default function Map({ results, event, onVoted }: any) {
       {/* CTA */}
       <div style={{ padding: '0 14px 12px' }}>
         <button onClick={() => setShowShare(true)}
-          style={{ width: '100%', background: 'linear-gradient(135deg,#b0001a,#ff1a3c,#ff3b5c)', border: 'none', borderRadius: 18, padding: '16px 20px', fontSize: 16, fontWeight: 800, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, textTransform: 'uppercase', letterSpacing: .5, boxShadow: '0 0 35px #ff3b5c55, 0 0 70px #ff3b5c18', outline: '1.5px solid #ff3b5c66' }}>
+          style={{ width: '100%', background: 'linear-gradient(135deg,#4a0010,#7d0a2a,#9b1942)', border: 'none', borderRadius: 50, padding: '10px 20px', fontSize: 16, fontWeight: 800, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, textTransform: 'uppercase', letterSpacing: .5, boxShadow: '0 0 35px #ff3b5c55, 0 0 70px #ff3b5c18', outline: '1.5px solid #ff3b5c66' }}>
           <svg width="26" height="14" viewBox="0 0 40 16" fill="none">
             <polyline points={EKG} stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="80" strokeDashoffset="80">
