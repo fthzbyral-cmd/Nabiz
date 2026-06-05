@@ -35,8 +35,8 @@ export default function Home() {
     })
 
     setEvent(ev)
-    const topProvince = Object.entries(byProvince).sort((a:any,b:any)=>Object.values(b[1]).reduce((s:any,v:any)=>s+v,0)-Object.values(a[1]).reduce((s:any,v:any)=>s+v,0))[0]?.[0] || '';
-    const topProvinceCount = topProvince ? Object.values(byProvince[topProvince]).reduce((s:any,v:any)=>s+v,0) : 0;
+    const topProvince = (Object.entries(byProvince) as [string, Record<string,number>][]).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0))[0]?.[0] || '';
+    const topProvinceCount = topProvince ? (Object.values(byProvince[topProvince]) as number[]).reduce((s,v)=>s+v,0) : 0;
     setResults({ byProvince, byEmotion, total: votes?.length || 0, topProvince, topProvinceCount, event: ev })
   }
 
