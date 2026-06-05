@@ -285,7 +285,7 @@ export default function Map({ results, event, onVoted }: any) {
       </div>
 
       {/* MAP */}
-      <div style={{ padding: '0 14px 70px' }}>
+      <div style={{ padding: '0 14px 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ fontSize: 13, color: '#ccd', fontWeight: 500 }}>İl bazında anlık duygu haritası</div>
           <div style={{ display: 'flex', gap: 6, position: 'relative' }}>
@@ -332,7 +332,7 @@ export default function Map({ results, event, onVoted }: any) {
       </div>
 
       {/* STATS 5 KART */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, padding: '0 14px 70px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, padding: '0 14px 6px' }}>
         <div style={{ background: '#0e1520', borderRadius: 10, padding: '8px 4px', textAlign: 'center', border: '.5px solid #1a2535' }}>
           <div style={{ fontSize: 7, color: '#445', textTransform: 'uppercase', marginBottom: 2 }}>Katılım</div>
           <svg width="100%" height="12" viewBox="0 0 40 12">
@@ -381,7 +381,7 @@ export default function Map({ results, event, onVoted }: any) {
       </div>
 
       {/* CANLI AKIŞ */}
-      <div style={{ padding: '0 14px 70px' }}>
+      <div style={{ padding: '0 14px 6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#ccd' }}>
             <span style={{ color: '#ff3b5c', animation: 'blink 1s infinite' }}>●</span>
