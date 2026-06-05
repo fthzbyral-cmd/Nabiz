@@ -438,7 +438,7 @@ export default function Map({ results, event, onVoted }: any) {
         ].map((item, i) => (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, fontSize: 9, color: item.active ? '#ff3b5c' : '#445', cursor: 'pointer' }} onClick={() => item.plus && setShowShare(true)}>
             {item.plus ? (
-              <div style={{ width: 42, height: 42, background: '#3a0010', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: -18, boxShadow: '0 0 10px #ff0044, 0 0 20px #ff004466', fontSize: 20, color: '#fff' }}>+</div>
+              <div style={{ width: 42, height: 42, background: '#3a0010', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 0, boxShadow: '0 0 10px #ff0044, 0 0 20px #ff004466', outline: '1.5px solid #ff0044', fontSize: 20, color: '#fff' }}>+</div>
             ) : (
               <>
                 <div style={{ fontSize: 18 }}>{item.icon}</div>
