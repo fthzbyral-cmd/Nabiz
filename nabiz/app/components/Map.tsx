@@ -375,7 +375,7 @@ export default function Map({ results, event, onVoted }: any) {
           <svg width="100%" height="12" viewBox="0 0 40 12">
             <polyline points="0,7 5,7 7,1 9,11 11,3 13,9 15,6 40,6" stroke="#ff3b5c" strokeWidth="1.2" fill="none" strokeLinecap="round" />
           </svg>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#fff', marginTop: 2 }}>{(total * 3).toLocaleString('tr-TR')}</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#fff', marginTop: 2 }}>{total.toLocaleString('tr-TR')}</div>
           <div style={{ fontSize: 7, color: '#445' }}>bugün</div>
         </div>
       </div>
