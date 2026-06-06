@@ -194,7 +194,7 @@ function useColorUpdate(orbsRef: React.RefObject<Record<string, SVGCircleElement
       const topEm = Object.keys(byProv).length > 0
         ? Object.keys(byProv).reduce((a, b) => byProv[a] > byProv[b] ? a : b)
         : null
-      if (topEm) { el.setAttribute('fill', `url(#grad_${topEm})`); const totalVotes = Object.values(byProv).reduce((a,b)=>a+b,0); const glowId = totalVotes > 20 ? 'bigGlow' : totalVotes > 5 ? 'oGlow' : 'bGlow'; el.setAttribute('filter', `url(#${glowId})`); }
+      if (topEm) { el.setAttribute('fill', `url(#grad_${topEm})`); const totalVotes = (Object.values(byProv) as number[]).reduce((a,b)=>a+b,0); const glowId = totalVotes > 20 ? 'bigGlow' : totalVotes > 5 ? 'oGlow' : 'bGlow'; el.setAttribute('filter', `url(#${glowId})`); }
     })
   }, [byProvince])
 }
