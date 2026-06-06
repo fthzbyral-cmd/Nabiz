@@ -467,7 +467,7 @@ export default function Map({ results, event, onVoted }: any) {
               ))}
             </div>
             <button onClick={submitVote} disabled={!selectedEmotion}
-              style={{ width: '100%', background: '#ff3b5c', border: 'none', borderRadius: 14, padding: 14, fontSize: 15, fontWeight: 700, color: '#fff', cursor: selectedEmotion ? 'pointer' : 'not-allowed', opacity: selectedEmotion ? 1 : 0.4 }}>
+              style={{ width: '100%', background: '#3a0010', border: 'none', borderRadius: 50, padding: '8px 20px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: selectedEmotion ? 'pointer' : 'not-allowed', opacity: selectedEmotion ? 1 : 0.4, boxShadow: '0 0 10px #ff0044, 0 0 25px #ff004499, 0 0 50px #ff004444', outline: '1.5px solid #ff0044' }}>
               Paylaş
             </button>
           </div>
