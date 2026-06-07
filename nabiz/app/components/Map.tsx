@@ -250,12 +250,10 @@ export default function Map({ results, event, onVoted }: any) {
 
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 14px 11px', borderBottom: '.5px solid #1a2030' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1.5 }}>nabi</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1.5 }}>Duyguselı</span>
           <span style={{ position: 'relative', display: 'inline-block', fontSize: 24, fontWeight: 900, letterSpacing: -1.5 }}>
-            z
-           z
-         <span style={{ position: 'absolute', top: 0, right: -8, width: 6, height: 6,  borderRadius: '50%', background: '#ff3b5c', animation: 'blink 1.2s infinite', display: 'block' }} />
+         <span style={{ position: 'absolute', top: -12, right: -1, width: 5, height: 5,  borderRadius: '50%', background: '#ff3b5c', animation: 'blink 1.2s infinite', display: 'block' }} />
           </span>
           <svg width="34" height="14" viewBox="0 0 40 16" fill="none" style={{ marginLeft: 8 }}>
             <polyline points={EKG} stroke="#ff3b5c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
