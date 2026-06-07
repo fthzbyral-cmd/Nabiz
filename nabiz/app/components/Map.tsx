@@ -115,9 +115,7 @@ function useStaticMap(mapRef: React.RefObject<HTMLDivElement | null>, onProvince
         if (!c || isNaN(c[0]) || isNaN(c[1])) return
 
         const area = path.area(d as any)
-        const r = isBig
-          ? Math.max(6, Math.min(12, Math.sqrt(area) * 0.09))
-          : Math.max(2, Math.min(4.5, Math.sqrt(area) * 0.038))
+        const r = Math.max(2, Math.min(4.5, Math.sqrt(area) * 0.038))
 
         // Ripple — sadece büyük şehirlerde, sınırlı sayıda
         if (isBig) {
@@ -168,10 +166,7 @@ function useStaticMap(mapRef: React.RefObject<HTMLDivElement | null>, onProvince
           const info = BIG_CITIES[k]
           svg.append('text').attr('x', c[0]).attr('y', c[1] - r - 6)
             .attr('text-anchor', 'middle').attr('font-size', '7.5').attr('font-weight', '700')
-            .attr('fill', '#fff').attr('opacity', '.9').style('pointer-events', 'none').text(info.label)
-          svg.append('text').attr('x', c[0]).attr('y', c[1] - r + 3)
-            .attr('text-anchor', 'middle').attr('font-size', '6.5')
-            .attr('fill', '#aaa').attr('opacity', '.8').style('pointer-events', 'none').text(info.val)
+            .attr('fill', '#fff').attr('opacity', '.9').style('pointer-events', 'none').text('')
         }
       })
     }
