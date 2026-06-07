@@ -194,7 +194,7 @@ function useColorUpdate(orbsRef: React.RefObject<Record<string, SVGCircleElement
   }, [byProvince])
 }
 
-export default function Map({ results, event, onVoted, onlinecount }: any) {
+export default function Map({ results, event, onVoted, onlineCount }: any) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [showShare, setShowShare] = useState(false)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
