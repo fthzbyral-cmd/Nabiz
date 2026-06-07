@@ -61,15 +61,15 @@ function useStaticMap(mapRef: React.RefObject<HTMLDivElement | null>, onProvince
 
       // Border glow
       defs.append('filter').attr('id', 'bGlow').attr('x', '-20%').attr('y', '-20%').attr('width', '140%').attr('height', '140%')
-        .html('<feGaussianBlur stdDeviation="0.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+        .html('<feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
 
       // Orb glow — küçük iller
       defs.append('filter').attr('id', 'oGlow').attr('x', '-100%').attr('y', '-100%').attr('width', '300%').attr('height', '300%')
-        .html('<feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+        .html('<feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
 
       // Orb glow — büyük şehirler
       defs.append('filter').attr('id', 'bigGlow').attr('x', '-150%').attr('y', '-150%').attr('width', '400%').attr('height', '400%')
-        .html('<feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
+        .html('<feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>')
 
       // Global gradient defs — renk güncellemesi için
       EMOTIONS.forEach(em => {
@@ -194,7 +194,7 @@ function useColorUpdate(orbsRef: React.RefObject<Record<string, SVGCircleElement
   }, [byProvince])
 }
 
-export default function Map({ results, event, onVoted }: any) {
+export default function Map({ results, event, onVoted, onlinecount }: any) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [showShare, setShowShare] = useState(false)
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null)
@@ -259,7 +259,7 @@ export default function Map({ results, event, onVoted }: any) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#1a0810', border: '.5px solid #ff3b5c55', borderRadius: 20, padding: '3px 8px', fontSize: 10, color: '#ff3b5c', fontWeight: 700 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff3b5c', animation: 'blink 1.2s infinite' }} />CANLI
           </div>
-          <div style={{ fontSize: 11, color: '#778' }}>👥 {total.toLocaleString('tr-TR')}</div>
+          <div style={{ fontSize: 11, color: '#778' }}>👥 {onlineCount}</div>
         </div>
       </div>
 

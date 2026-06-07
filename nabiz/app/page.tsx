@@ -11,6 +11,7 @@ const supabase = createClient(
 
 export default function Home() {
   const [results, setResults] = useState<any>(null)
+  const [onlineCount, setOnlineCount] = useState(1)
   const [event, setEvent] = useState<any>(null)
 
   async function fetchResults() {
@@ -41,14 +42,24 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const channel = supabase.channel('online-users')
+    channel.on('presence', { event: 'sync' }, () => {
+      setOnlineCount(Object.keys(channel.presenceState()).length)
+      })
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') await channel.track({ online: true })
+        })
     fetchResults()
     const interval = setInterval(fetchResults, 5000)
-    return () => clearInterval(interval)
+    return () => {
+        clearInterval(interval)
+          supabase.removeChannel(channel)
+          }
   }, [])
 
   return (
     <main>
-      <Map results={results} event={event} onVoted={fetchResults} />
+      <Map results={results} event={event} onVoted={fetchResults} onlineCount={onlineCount} />
     </main>
   )
 }
